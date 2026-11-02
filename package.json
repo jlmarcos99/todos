@@ -1,0 +1,28 @@
+{
+  "name": "todos",
+  "version": "1.0.0",
+  "description": "A keyboard-first task manager and daily work log for the terminal",
+  "private": true,
+  "scripts": {
+    "start": "node index.ts",
+    "dev": "node --watch index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "start:prod": "node dist/index.js",
+    "test": "node --test --experimental-test-isolation=none app/tests/*.test.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.0",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@earendil-works/pi-tui": "0.83.0"
+  }
+}
