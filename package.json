@@ -1,18 +1,45 @@
 {
-  "name": "todos",
+  "name": "@jlmarcos99/todos",
   "version": "1.0.0",
   "description": "A keyboard-first task manager and daily work log for the terminal",
-  "private": true,
-  "scripts": {
-    "start": "node index.ts",
-    "dev": "node --watch index.ts",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc",
-    "start:prod": "node dist/index.js",
-    "test": "node --test --experimental-test-isolation=none app/tests/*.test.ts"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jlmarcos99/todos.git"
   },
-  "keywords": [],
-  "author": "",
+  "homepage": "https://github.com/jlmarcos99/todos#readme",
+  "bugs": {
+    "url": "https://github.com/jlmarcos99/todos/issues"
+  },
+  "author": "jlmarcos99",
+  "bin": {
+    "todos": "./dist/index.js"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/app/src/",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start": "npm run build && node dist/index.js",
+    "dev": "npm run build && node dist/index.js",
+    "init": "npm run build && node dist/index.js init",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc && node scripts/prepare-bin.mjs",
+    "start:prod": "node dist/index.js",
+    "test": "npm run build && node --test dist/app/tests/*.test.js",
+    "changeset": "changeset",
+    "release": "npm run build && changeset publish"
+  },
+  "keywords": [
+    "todo",
+    "task-manager",
+    "daily-log",
+    "terminal",
+    "tui"
+  ],
   "license": "ISC",
   "type": "module",
   "engines": {
@@ -20,7 +47,8 @@
   },
   "devDependencies": {
     "@types/node": "22.20.0",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@changesets/cli": "^2.31.0"
   },
   "dependencies": {
     "@earendil-works/pi-tui": "0.83.0"

@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto';
-import type { ActivityKind } from '../model/activity.ts';
 import { getDailyItems, type DailyItem } from '../model/daily.ts';
 import type { Task } from '../model/task.ts';
 import type { Vault } from '../model/vault.ts';
+import { TaskService } from '../application/task-service.ts';
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1_000;
 export const TASK_VIEWS = ['current', 'daily', 'history'] as const;
@@ -10,18 +9,22 @@ export type TaskView = typeof TASK_VIEWS[number];
 
 /** In-memory application state. It does not depend on terminal rendering. */
 export class TodoSession {
-  readonly vaults: Vault[];
+  vaults: Vault[];
   private readonly now: () => Date;
+  private readonly tasksService: TaskService;
   vaultIndex = 0;
   view: TaskView = 'current';
   selected = 0;
   query = '';
   dailyDate: Date;
   message = 'Track what is next, what is moving, and what you have done.';
+  syncMessage = 'Local only';
 
-  constructor(vaults: Vault[], now: () => Date) {
+  constructor(vaults: Vault[], now: () => Date, tasksService = new TaskService()) {
     this.vaults = vaults;
     this.now = now;
+    this.tasksService = tasksService;
+    this.tasksService.setVaults(vaults);
     this.dailyDate = new Date(now());
   }
 
@@ -87,58 +90,40 @@ export class TodoSession {
   startSelectedTask(): void {
     const task = this.selectedTask;
     if (!task || task.status === 'in-progress') return;
-    task.status = 'in-progress';
-    delete task.completedAt;
-    this.recordActivity(task, 'started');
     this.message = 'In progress. Press n to add a progress note.';
+    void this.runMutation(() => this.tasksService.startTask(this.vault, task, this.now()));
     this.clampSelection();
   }
 
   toggleSelectedTask(): void {
     const task = this.selectedTask;
     if (!task) return;
-    if (task.status === 'done') {
-      task.status = 'todo';
-      delete task.completedAt;
-      this.recordActivity(task, 'reopened');
-      this.message = 'Task reopened. Previous daily entries are preserved.';
-    } else {
-      task.status = 'done';
-      task.completedAt = this.now();
-      this.recordActivity(task, 'completed');
-      this.message = 'Done. Recorded in today’s Daily.';
-    }
+    const wasDone = task.status === 'done';
+    this.message = wasDone ? 'Task reopened. Previous daily entries are preserved.' : 'Done. Recorded in today’s Daily.';
+    void this.runMutation(() => this.tasksService.toggleTask(this.vault, task, this.now()));
     this.clampSelection();
   }
 
   addProgressNote(note: string, taskId = this.selectedTask?.id): void {
     const task = this.vault.tasks.find(task => task.id === taskId);
     if (!task || !note.trim()) return;
-    if (task.status === 'todo') task.status = 'in-progress';
-    this.recordActivity(task, 'note', note.trim());
     this.message = 'Progress saved in today’s Daily.';
+    void this.runMutation(() => this.tasksService.addProgressNote(this.vault, task, note, this.now()));
     this.clampSelection();
-  }
-
-  private recordActivity(task: Task, kind: ActivityKind, note?: string): void {
-    this.vault.activity.push({
-      id: randomUUID(),
-      taskId: task.id,
-      taskName: task.name,
-      date: this.now(),
-      kind,
-      status: task.status,
-      ...(note ? { note } : {}),
-    });
   }
 
   addTask(name: string): void {
     if (!name.trim()) return;
-    this.vault.tasks.push({ id: randomUUID(), name: name.trim(), status: 'todo', date: this.now() });
     this.view = 'current';
     this.query = '';
-    this.selected = this.tasks.length - 1;
-    this.message = 'Task added to this session.';
+    const operation = this.tasksService.addTask(this.vault, name, this.now());
+    this.selected = Math.max(0, this.tasks.length - 1);
+    void operation.then(task => {
+      if (task) {
+        this.selected = this.tasks.findIndex(item => item.id === task.id);
+        this.message = 'Task added.';
+      }
+    }).catch(error => { this.message = `Could not save task: ${(error as Error).message}`; });
   }
 
   search(query: string): void {
@@ -156,5 +141,33 @@ export class TodoSession {
   showToday(): void {
     this.dailyDate = new Date(this.now());
     this.switchView('daily');
+  }
+
+  replaceVaults(vaults: Vault[]): void {
+    const previousVaultId = this.vault?.id;
+    const previousTaskId = this.selectedTask?.id;
+    this.vaults = vaults;
+    this.tasksService.setVaults(vaults);
+    const nextVault = vaults.findIndex(vault => vault.id === previousVaultId);
+    this.vaultIndex = nextVault >= 0 ? nextVault : 0;
+    const nextTask = this.tasks.findIndex(task => task.id === previousTaskId);
+    this.selected = nextTask >= 0 ? nextTask : 0;
+    this.clampSelection();
+  }
+
+  createVault(name: string): void {
+    if (!name.trim()) return;
+    void this.tasksService.createVault(name).then(vault => {
+      if (!this.vaults.some(existing => existing.id === vault.id)) this.vaults.push(vault);
+      this.tasksService.setVaults(this.vaults);
+      this.vaultIndex = this.vaults.findIndex(existing => existing.id === vault.id);
+      this.selected = 0;
+      this.message = `Vault ${vault.name} created.`;
+    }).catch(error => { this.message = `Could not create vault: ${(error as Error).message}`; });
+  }
+
+  private async runMutation(operation: () => Promise<void>): Promise<void> {
+    try { await operation(); }
+    catch (error) { this.message = `Could not save change: ${(error as Error).message}`; }
   }
 }

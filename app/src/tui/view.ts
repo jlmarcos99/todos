@@ -165,7 +165,7 @@ function renderHeader(session: TodoSession, width: number): string[] {
   ].join('  ');
 
   let subtitle = vault.description;
-  let context = 'DEMO · session only';
+  let context = session.syncMessage;
   if (view === 'daily') {
     const date = session.dailyDate.toLocaleDateString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
@@ -177,7 +177,7 @@ function renderHeader(session: TodoSession, width: number): string[] {
     const ongoing = session.dailyItems.filter(item => item.status === 'in-progress').length;
     const noteCount = session.dailyItems.reduce((count, item) => count + item.entries.filter(entry => entry.note).length, 0);
     subtitle = `${startDate} – ${date}  ·  [ / ] change window · t today`;
-    context = `${completed} done · ${ongoing} in progress · ${noteCount} notes across ${session.dailyItems.length} tasks`;
+    context = `${session.syncMessage} · ${completed} done · ${ongoing} in progress · ${noteCount} notes`;
   }
 
   return [
@@ -234,8 +234,8 @@ function renderSidebar(session: TodoSession): string[] {
       : theme.muted(`   ${vault.name}`);
     lines.push(label, theme.muted(`   ${pending} open tasks`), '');
   });
-  lines.push('', theme.muted(' Tab / ⇧Tab switch'), '', theme.muted(' ──────────────────'),
-    theme.muted(' DEMO · session only'));
+  lines.push('', theme.muted(' Tab / ⇧Tab switch · V new vault'), '', theme.muted(' ──────────────────'),
+    theme.muted(` ${session.syncMessage}`));
   return lines;
 }
 
@@ -252,7 +252,8 @@ function renderHelp(): string[] {
     ' [ / ]        Previous / next two-day window',
     ' Ctrl+d/u     Scroll daily notes',
     ' t            Today’s daily',
-    ' a · /        Add task · search',
+    ' a · V · /     Add task · vault · search',
+    ' r            Sync, or link a Git remote if local-only',
     ' Esc · ?      Back / clear · help',
     ' q / Ctrl+C   Quit', '',
     ' Daily keeps progress by local calendar date.',
@@ -304,6 +305,6 @@ function renderFooter(session: TodoSession, inputLine?: string, showActivity?: b
   return [
     inputLine ?? message,
     ` ${theme.accent('j/k')} move  ${theme.accent('Tab')} vault  ${theme.accent('h/l')} views  ${theme.accent('space')} done`,
-    ` ${theme.accent('s')} start  ${theme.accent('n')} note  ${theme.accent('Enter')} activity  ${theme.accent('?')} help  ${theme.accent('q')} quit`,
+    ` ${theme.accent('s')} start  ${theme.accent('n')} note  ${theme.accent('V')} vault  ${theme.accent('r')} sync/link  ${theme.accent('?')} help`,
   ];
 }

@@ -1,4 +1,4 @@
-import { App } from './app/src/app.ts'
+#!/usr/bin/env node
+import { main } from './app/src/cli.ts';
 
-
-App.init()
+void main();
