@@ -122,18 +122,15 @@ npm run start:prod # Run the compiled CLI
 Run `npm run changeset` to add a Changeset for each user-facing change.
 Changesets opens a version pull
 request against `master`; merging that version pull request publishes the
-package through GitHub Actions. The release workflow uses npm Trusted
-Publishing, so it does not need an npm token secret. The initial `1.0.0`
-publication must be bootstrapped manually; then configure the package's Trusted
-Publisher in npm for GitHub Actions, repository `jlmarcos99/todos`, and workflow
-filename `release.yml` (enter the filename only). Enable the `npm publish`
-allowed action for that publisher; `npm stage publish` alone will not work with
-this workflow. In GitHub, also allow Actions to create pull requests in
-Settings → Actions → General so Changesets can open version pull requests. The
-included initial patch Changeset prepares the next release as `1.0.1`.
-
-See [npm's Trusted Publishing setup](https://docs.npmjs.com/trusted-publishers/)
-for the current account and package settings.
+package through GitHub Actions. The release workflow publishes through the
+`NPM_TOKEN` GitHub Actions secret, following the setup used by BareWT. Create a
+granular npm access token with package write access and **Bypass 2FA** enabled,
+then add it in the `todos` repository under Settings → Secrets and variables →
+Actions as `NPM_TOKEN`. The package publishes with npm provenance. In GitHub,
+also allow Actions to create pull requests in Settings → Actions → General so
+Changesets can open version pull requests. Merging a version pull request to
+`master` publishes the package; the included initial patch Changeset prepares
+version `1.0.1`.
 
 Source is organized under `app/src`: `config` resolves user paths, `storage`
 owns JSON records and atomic writes, `application` owns task operations,

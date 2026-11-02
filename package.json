@@ -12,7 +12,7 @@
   },
   "author": "jlmarcos99",
   "bin": {
-    "todos": "./dist/index.js"
+    "todos": "dist/index.js"
   },
   "files": [
     "dist/index.js",
@@ -20,7 +20,8 @@
     "README.md"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "start": "npm run build && node dist/index.js",
