@@ -27,7 +27,11 @@ export class GitClient {
 
   private runOnce(args: string[], allowFailure: boolean): Promise<GitResult> {
     return new Promise((resolve, reject) => {
-      const child = spawn('git', ['-C', this.directory, ...args], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+      const child = spawn('git', ['-C', this.directory, ...args], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: '0' },
+      });
       let stdout = '';
       let stderr = '';
       child.stdout.setEncoding('utf8').on('data', chunk => { stdout += chunk; });
