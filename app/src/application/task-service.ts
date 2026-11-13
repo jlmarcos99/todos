@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { ActivityKind } from '../model/activity.ts';
+import type { ActivityKind, TaskActivity } from '../model/activity.ts';
 import type { Task, TaskStatus } from '../model/task.ts';
 import type { Vault } from '../model/vault.ts';
 import type { StoreRepository } from '../storage/store.ts';
@@ -52,6 +52,31 @@ export class TaskService {
       const currentTask = this.resolveTask(currentVault, task);
       if (currentTask.status === 'done') await this.applyStatusChange(currentVault, currentTask, 'todo', 'reopened', date);
       else await this.applyStatusChange(currentVault, currentTask, 'done', 'completed', date);
+    });
+  }
+
+  async deleteTask(vault: Vault, task: Task): Promise<void> {
+    await this.runChange(`Deleted task: ${task.name}`, async () => {
+      const currentVault = this.resolveVault(vault);
+      const currentTask = this.resolveTask(currentVault, task);
+      const related = currentVault.activity.filter(item => item.taskId === currentTask.id);
+      const deletedActivity: TaskActivity[] = [];
+      try {
+        if (this.store) {
+          for (const item of related) {
+            await this.store.deleteActivity(currentVault.id, item.id);
+            deletedActivity.push(item);
+          }
+          await this.store.deleteTask(currentVault.id, currentTask.id);
+        }
+        currentVault.tasks = currentVault.tasks.filter(item => item.id !== currentTask.id);
+        currentVault.activity = currentVault.activity.filter(item => item.taskId !== currentTask.id);
+      } catch (error) {
+        if (this.store) {
+          for (const item of deletedActivity) await this.store.saveActivity(currentVault.id, item).catch(() => undefined);
+        }
+        throw error;
+      }
     });
   }
 

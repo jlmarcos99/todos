@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { chmod, lstat, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { TaskActivity } from '../model/activity.ts';
 import type { Task } from '../model/task.ts';
@@ -10,6 +10,7 @@ import { decodeActivity, decodeTask, decodeVault, encodeActivity, encodeTask } f
 const FORMAT_VERSION = 1;
 const OWNER_MARKER = '.jmtodos-store';
 const STORE_FILE = 'store.json';
+const RECORD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class StoreRepository {
   constructor(readonly root: string) {}
@@ -105,6 +106,14 @@ export class StoreRepository {
     await writeJsonAtomically(path.join(this.root, 'vaults', vaultId, 'activity', `${activity.id}.json`), encodeActivity(activity));
   }
 
+  async deleteTask(vaultId: string, taskId: string): Promise<void> {
+    await this.deleteRecord(this.recordPath(vaultId, 'tasks', taskId));
+  }
+
+  async deleteActivity(vaultId: string, activityId: string): Promise<void> {
+    await this.deleteRecord(this.recordPath(vaultId, 'activity', activityId));
+  }
+
   private async assertStoreVersion(): Promise<void> {
     const data = await this.readJson(path.join(this.root, STORE_FILE));
     if (typeof data !== 'object' || data === null || !('formatVersion' in data) || data.formatVersion !== FORMAT_VERSION) {
@@ -127,6 +136,26 @@ export class StoreRepository {
       return JSON.parse(await readFile(file, 'utf8')) as unknown;
     }
     catch (error) { throw new Error(`Could not read Todos data at ${file}: ${(error as Error).message}`); }
+  }
+
+  private recordPath(vaultId: string, folder: 'tasks' | 'activity', id: string): string {
+    return path.join(this.root, 'vaults', this.assertRecordId(vaultId), folder, `${this.assertRecordId(id)}.json`);
+  }
+
+  private assertRecordId(value: string): string {
+    if (!RECORD_ID.test(value)) throw new Error('Refusing to delete a record with an invalid id.');
+    return value;
+  }
+
+  private async deleteRecord(file: string): Promise<void> {
+    let info;
+    try { info = await lstat(file); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+    if (!info.isFile() || info.isSymbolicLink()) throw new Error(`Refusing to delete a non-regular file: ${file}`);
+    await rm(file);
   }
 
   private async readRecords<T>(directory: string, decode: (value: unknown) => T): Promise<T[]> {
