@@ -1,5 +1,11 @@
 # @jlmarcos99/todos
 
+## 1.1.0
+
+### Minor Changes
+
+- 7cac945: Delete a selected task and its activity from the TUI. Press d twice to confirm.
+
 ## 1.0.1
 
 ### Patch Changes
