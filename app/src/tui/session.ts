@@ -95,6 +95,15 @@ export class TodoSession {
     this.clampSelection();
   }
 
+  deleteSelectedTask(): void {
+    const task = this.selectedTask;
+    if (!task) return;
+    const name = task.name;
+    void this.runMutation(() => this.tasksService.deleteTask(this.vault, task));
+    this.message = `Deleted "${name}".`;
+    this.clampSelection();
+  }
+
   toggleSelectedTask(): void {
     const task = this.selectedTask;
     if (!task) return;

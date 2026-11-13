@@ -252,6 +252,7 @@ function renderHelp(): string[] {
     ' [ / ]        Previous / next two-day window',
     ' Ctrl+d/u     Scroll daily notes',
     ' t            Today’s daily',
+    ' d            Delete task; press d again to confirm',
     ' a · V · /     Add task · vault · search',
     ' r            Sync, or link a Git remote if local-only',
     ' Esc · ?      Back / clear · help',
@@ -305,6 +306,6 @@ function renderFooter(session: TodoSession, inputLine?: string, showActivity?: b
   return [
     inputLine ?? message,
     ` ${theme.accent('j/k')} move  ${theme.accent('Tab')} vault  ${theme.accent('h/l')} views  ${theme.accent('space')} done`,
-    ` ${theme.accent('s')} start  ${theme.accent('n')} note  ${theme.accent('V')} vault  ${theme.accent('r')} sync/link  ${theme.accent('?')} help`,
+    ` ${theme.accent('s')} start  ${theme.accent('n')} note  ${theme.accent('d')} delete  ${theme.accent('V')} vault  ${theme.accent('r')} sync  ${theme.accent('?')} help`,
   ];
 }

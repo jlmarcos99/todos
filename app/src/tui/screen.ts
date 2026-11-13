@@ -36,6 +36,7 @@ export class TodoScreen implements Component {
   private noteTaskId: string | undefined;
   private viewportWidth = 80;
   private previousGTime = 0;
+  private pendingDeleteId: string | undefined;
   private readonly unsubscribeSync?: () => void;
 
   constructor(options: ScreenOptions) {
@@ -75,6 +76,10 @@ export class TodoScreen implements Component {
   }
 
   private handleCommand(command: string): void {
+    const confirmDelete = this.pendingDeleteId !== undefined && command === 'd'
+      && this.session.selectedTask?.id === this.pendingDeleteId;
+    if (this.pendingDeleteId !== undefined && !confirmDelete) this.session.message = 'Delete cancelled.';
+    this.pendingDeleteId = undefined;
     if (command !== 'ctrl+d' && command !== 'ctrl+u') this.followDailySelection = true;
     if (command === 'q') {
       this.options.quit();
@@ -90,6 +95,10 @@ export class TodoScreen implements Component {
     }
     if (this.showActivity) {
       this.handleActivityCommand(command);
+      return;
+    }
+    if (confirmDelete) {
+      this.session.deleteSelectedTask();
       return;
     }
 
@@ -126,6 +135,13 @@ export class TodoScreen implements Component {
           this.activityOffset = 0;
         }
         break;
+      case 'd': {
+        const task = this.session.selectedTask;
+        if (!task) break;
+        this.pendingDeleteId = task.id;
+        this.session.message = `Delete "${task.name}"? Press d again to confirm.`;
+        break;
+      }
       case 'a': this.openInput('add'); break;
       case 'V': this.openInput('vault'); break;
       case 'r':

@@ -36,6 +36,30 @@ test('j/k and gg/G navigate within task bounds', () => {
   assert.equal(ui.session.selected, 0);
 });
 
+test('d twice deletes the selected task and its activity', () => {
+  const ui = screen();
+  const task = ui.session.tasks.find(item => item.status === 'done')!;
+  ui.session.selected = ui.session.tasks.indexOf(task);
+  const count = ui.session.vault.tasks.length;
+  ui.handleInput('d');
+  assert.equal(ui.session.vault.tasks.length, count);
+  assert.match(ui.session.message, /Press d again/);
+  ui.handleInput('d');
+  assert.equal(ui.session.vault.tasks.some(item => item.id === task.id), false);
+  assert.equal(ui.session.vault.activity.some(item => item.taskId === task.id), false);
+  assert.equal(ui.session.vault.tasks.length, count - 1);
+});
+
+test('another key cancels task deletion', () => {
+  const ui = screen();
+  const count = ui.session.vault.tasks.length;
+  ui.handleInput('d');
+  ui.handleInput('j');
+  assert.equal(ui.session.vault.tasks.length, count);
+  assert.equal(ui.session.selected, 1);
+  assert.match(ui.session.message, /cancelled/);
+});
+
 test('space completes and reopens a task', () => {
   const ui = screen();
   const task = ui.session.tasks[0];

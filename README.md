@@ -79,7 +79,8 @@ Configuration is kept separately using each platform's config directory.
 - **History** shows tasks completed more than 24 hours ago.
 
 Press `a` to add a task, `s` to start it, `n` to add a progress note, and Space
-to complete or reopen it. Press `V` to create another vault. `Tab` switches
+to complete or reopen it. Press `d` twice to delete the selected task and its
+activity. Press `V` to create another vault. `Tab` switches
 vaults. Press `r` to synchronize; in local-only mode it prompts for a Git remote
 URL and links the current vault store. Changes are saved locally before Git is
 contacted; an offline remote leaves them saved and marked pending.
@@ -97,6 +98,7 @@ contacted; an offline remote leaves them saved and marked pending.
 | Enter | Read task activity |
 | `[` / `]` | Previous / next Daily window |
 | `t` | Today's Daily |
+| `d` `d` | Delete selected task; the second `d` confirms |
 | `a` / `V` | Add task / create vault |
 | `/` | Search the current view |
 | `r` | Sync, or link a remote in local-only mode |
